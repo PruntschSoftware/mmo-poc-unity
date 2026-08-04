@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/TestWorld.unity
     guid: cdd1f03cfc790dc41ac3091b735b0cb7
+  - enabled: 1
+    path: Assets/Scenes/TestWorldMirror.unity
+    guid: ee80ad64331344b483057b5ec710ffc0
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 35845fe01580c41289b024647b1d1c53, type: 3}
