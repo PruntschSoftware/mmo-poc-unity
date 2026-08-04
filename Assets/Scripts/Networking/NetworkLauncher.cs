@@ -196,6 +196,12 @@ namespace MmoPoC.Networking
                 NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
                 NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
                 NetworkManager.Singleton.OnTransportFailure -= OnTransportFailure;
+
+                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport != null)
+                {
+                    transport.OnTransportEvent -= OnServerTransportEvent;
+                }
             }
         }
 
@@ -223,6 +229,10 @@ namespace MmoPoC.Networking
                 var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
                 if (transport != null)
                 {
+                    // Log every transport event on the server
+                    transport.OnTransportEvent -= OnServerTransportEvent;
+                    transport.OnTransportEvent += OnServerTransportEvent;
+
                     // 1. Explicitly enable WebSockets
                     transport.UseWebSockets = true;
 
@@ -245,16 +255,23 @@ namespace MmoPoC.Networking
                               $"- ConnectionData.Port: {transport.ConnectionData.Port}");
                 }
 
-                bool success = NetworkManager.Singleton.StartServer();
-                Debug.Log($"[NetworkLauncher] Dedicated Server StartServer() success: {success}");
+                try
+                {
+                    bool success = NetworkManager.Singleton.StartServer();
+                    Debug.Log($"[NetworkLauncher] Dedicated Server StartServer() success: {success}");
 
-                if (success)
-                {
-                    Debug.Log($"[NetworkLauncher] Dedicated Server successfully started on port {transport?.ConnectionData.Port ?? 7777}!");
+                    if (success)
+                    {
+                        Debug.Log($"[NetworkLauncher] Dedicated Server successfully started on port {transport?.ConnectionData.Port ?? 7777}!");
+                    }
+                    else
+                    {
+                        Debug.LogError("[NetworkLauncher] Failed to start Dedicated Server!");
+                    }
                 }
-                else
+                catch (System.Exception ex)
                 {
-                    Debug.LogError("[NetworkLauncher] Failed to start Dedicated Server!");
+                    Debug.LogError($"[NetworkLauncher] Exception while starting Dedicated Server: {ex}");
                 }
             }
             else
@@ -397,6 +414,18 @@ namespace MmoPoC.Networking
                 {
                     connectButton.interactable = true;
                 }
+            }
+        }
+
+        private void OnServerTransportEvent(NetworkEvent eventType, ulong clientId, System.ArraySegment<byte> payload, float receiveTime)
+        {
+            try
+            {
+                Debug.Log($"[NetworkLauncher] OnTransportEvent: EventType={eventType}, ClientId={clientId}, PayloadLength={payload.Count}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[NetworkLauncher] Exception in OnTransportEvent logging: {ex}");
             }
         }
 
