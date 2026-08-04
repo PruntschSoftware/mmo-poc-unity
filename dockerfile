@@ -20,8 +20,8 @@ WORKDIR /app
 
 COPY Builds/ServerLinux/ ./
 
-RUN chmod +x ./*.x86_64
+RUN chmod +x ./MmoPocServer
 
 EXPOSE 7777
 
-CMD ["sh", "-c", "./MmoPocServer -batchmode -nographics -logFile -"]
+CMD ["./MmoPocServer", "-batchmode", "-nographics", "-logFile", "-"]
