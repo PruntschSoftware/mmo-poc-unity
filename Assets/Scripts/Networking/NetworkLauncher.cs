@@ -1,6 +1,6 @@
 using UnityEngine;
-using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
+using Mirror;
+using Mirror.SimpleWeb;
 using TMPro;
 using UnityEngine.UI;
 
@@ -29,8 +29,8 @@ namespace MmoPoC.Networking
 
         private readonly ServerPreset[] presets = new ServerPreset[]
         {
-            new ServerPreset { name = "Railway Demo", address = "sakura.proxy.rlwy.net", port = 38260 },
             new ServerPreset { name = "Local Host", address = "127.0.0.1", port = 7777 },
+            new ServerPreset { name = "Railway Demo", address = "sakura.proxy.rlwy.net", port = 38260 },
             new ServerPreset { name = "Custom Server", address = "", port = 0 }
         };
 
@@ -90,16 +90,11 @@ namespace MmoPoC.Networking
             }
         }
 
+        private bool isConnecting = false;
+
         private void Start()
         {
-            // Register Callbacks once
-            if (NetworkManager.Singleton != null)
-            {
-                NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-                NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-                NetworkManager.Singleton.OnTransportFailure += OnTransportFailure;
-                Debug.Log("[NetworkLauncher] Registered NetworkManager callbacks (OnClientConnectedCallback, OnClientDisconnectCallback, OnTransportFailure) once.");
-            }
+            RegisterNetworkEvents();
 
             if (CheckIsServer())
             {
@@ -135,7 +130,7 @@ namespace MmoPoC.Networking
                 serverDropdown.AddOptions(options);
                 serverDropdown.onValueChanged.AddListener(OnDropdownValueChanged);
 
-                // Select default preset (Railway Demo)
+                // Select default preset (Local Host)
                 serverDropdown.value = 0;
                 OnDropdownValueChanged(0);
             }
@@ -147,6 +142,42 @@ namespace MmoPoC.Networking
             }
 
             Debug.Log("[NetworkLauncher] Running in Client Mode.");
+        }
+
+        private void RegisterNetworkEvents()
+        {
+            NetworkClient.OnConnectedEvent -= OnClientConnected;
+            NetworkClient.OnConnectedEvent += OnClientConnected;
+
+            NetworkClient.OnDisconnectedEvent -= OnClientDisconnected;
+            NetworkClient.OnDisconnectedEvent += OnClientDisconnected;
+
+            NetworkClient.OnErrorEvent -= OnClientError;
+            NetworkClient.OnErrorEvent += OnClientError;
+        }
+
+        private void UnregisterNetworkEvents()
+        {
+            NetworkClient.OnConnectedEvent -= OnClientConnected;
+            NetworkClient.OnDisconnectedEvent -= OnClientDisconnected;
+            NetworkClient.OnErrorEvent -= OnClientError;
+        }
+
+        private void Update()
+        {
+            if (isConnecting)
+            {
+                if (NetworkClient.isConnected)
+                {
+                    isConnecting = false;
+                    OnClientConnected();
+                }
+                else if (!NetworkClient.active)
+                {
+                    isConnecting = false;
+                    OnClientDisconnected();
+                }
+            }
         }
 
         private void OnDropdownValueChanged(int index)
@@ -167,7 +198,7 @@ namespace MmoPoC.Networking
             }
             else
             {
-                // Custom Server: Clear address and port to allow clean manual input, or keep previous values
+                // Custom Server: Clear address and port to allow clean manual input
                 if (addressInputField != null)
                 {
                     addressInputField.text = "";
@@ -191,23 +222,12 @@ namespace MmoPoC.Networking
                 serverDropdown.onValueChanged.RemoveListener(OnDropdownValueChanged);
             }
 
-            if (NetworkManager.Singleton != null)
-            {
-                NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
-                NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
-                NetworkManager.Singleton.OnTransportFailure -= OnTransportFailure;
-
-                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-                if (transport != null)
-                {
-                    transport.OnTransportEvent -= OnServerTransportEvent;
-                }
-            }
+            UnregisterNetworkEvents();
         }
 
         private void StartDedicatedServer()
         {
-            Debug.Log("[NetworkLauncher] Starting as Dedicated Server...");
+            Debug.Log("[NetworkLauncher] Starting as Dedicated Server (Mirror)...");
 
             // Disable main camera since a server does not render gameplay
             GameObject mainCam = GameObject.FindWithTag("MainCamera");
@@ -223,46 +243,34 @@ namespace MmoPoC.Networking
                 uiCanvas.SetActive(false);
             }
 
-            if (NetworkManager.Singleton != null)
+            if (NetworkManager.singleton != null)
             {
-                // Setup Transport
-                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                var transport = NetworkManager.singleton.GetComponent<SimpleWebTransport>();
                 if (transport != null)
                 {
-                    // Log every transport event on the server
-                    transport.OnTransportEvent -= OnServerTransportEvent;
-                    transport.OnTransportEvent += OnServerTransportEvent;
-
-                    // 1. Explicitly enable WebSockets
-                    transport.UseWebSockets = true;
-
-                    // 2. Explicitly set Connection Data for Dedicated Server (0.0.0.0, 7777, 0.0.0.0)
-                    transport.SetConnectionData("0.0.0.0", 7777, "0.0.0.0");
-
-                    // 3. Log diagnostics before StartServer()
-#if UNITY_SERVER
-                    bool isUnityServerDefined = true;
-#else
-                    bool isUnityServerDefined = false;
-#endif
-                    Debug.Log($"[NetworkLauncher] Pre-StartServer Diagnostics:\n" +
-                              $"- Application.platform: {Application.platform}\n" +
-                              $"- UNITY_SERVER active: {isUnityServerDefined}\n" +
-                              $"- Protocol: {transport.Protocol}\n" +
-                              $"- UseWebSockets: {transport.UseWebSockets}\n" +
-                              $"- ConnectionData.Address: {transport.ConnectionData.Address}\n" +
-                              $"- ConnectionData.ServerListenAddress: {transport.ConnectionData.ServerListenAddress}\n" +
-                              $"- ConnectionData.Port: {transport.ConnectionData.Port}");
+                    transport.port = defaultPort;
                 }
+
+#if UNITY_SERVER
+                bool isUnityServerDefined = true;
+#else
+                bool isUnityServerDefined = false;
+#endif
+                Debug.Log($"[NetworkLauncher] Pre-StartServer Diagnostics:\n" +
+                          $"- Application.platform: {Application.platform}\n" +
+                          $"- UNITY_SERVER active: {isUnityServerDefined}\n" +
+                          $"- Transport: SimpleWebTransport\n" +
+                          $"- Port: {(transport != null ? transport.port : defaultPort)}");
 
                 try
                 {
-                    bool success = NetworkManager.Singleton.StartServer();
-                    Debug.Log($"[NetworkLauncher] Dedicated Server StartServer() success: {success}");
+                    NetworkManager.singleton.StartServer();
+                    bool active = NetworkServer.active;
+                    Debug.Log($"[NetworkLauncher] Dedicated Server StartServer() active: {active}");
 
-                    if (success)
+                    if (active)
                     {
-                        Debug.Log($"[NetworkLauncher] Dedicated Server successfully started on port {transport?.ConnectionData.Port ?? 7777}!");
+                        Debug.Log($"[NetworkLauncher] Dedicated Server successfully started on port {(transport != null ? transport.port : defaultPort)}!");
                     }
                     else
                     {
@@ -276,7 +284,7 @@ namespace MmoPoC.Networking
             }
             else
             {
-                Debug.LogError("[NetworkLauncher] NetworkManager.Singleton is null!");
+                Debug.LogError("[NetworkLauncher] NetworkManager.singleton is null!");
             }
         }
 
@@ -304,51 +312,35 @@ namespace MmoPoC.Networking
                 connectButton.interactable = false;
             }
 
-            if (NetworkManager.Singleton != null)
+            isConnecting = true;
+
+            if (NetworkManager.singleton != null)
             {
-                // Configure transport
-                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                NetworkManager.singleton.networkAddress = targetAddress;
+
+                var transport = NetworkManager.singleton.GetComponent<SimpleWebTransport>();
                 if (transport != null)
                 {
-                    transport.UseWebSockets = true; // Ensure WebSocket mode is clearly enabled
-                    
-                    // Call SetConnectionData before StartClient()
-                    transport.SetConnectionData(targetAddress, targetPort);
+                    transport.port = targetPort;
                 }
 
-                // Log the required pre-connection details
                 string enteredHost = targetAddress;
                 ushort enteredPort = targetPort;
-                string transportAddr = transport != null ? transport.ConnectionData.Address : "N/A";
-                ushort transportPort = transport != null ? transport.ConnectionData.Port : (ushort)0;
-                bool webSocketsEnabled = transport != null ? transport.UseWebSockets : false;
 
-                Debug.Log($"[NetworkLauncher] About to call StartClient(). Configuration details:\n" +
-                          $"- eingegebener Hostname: {enteredHost}\n" +
-                          $"- eingegebener Port: {enteredPort}\n" +
-                          $"- UnityTransport.ConnectionData.Address: {transportAddr}\n" +
-                          $"- UnityTransport.ConnectionData.Port: {transportPort}\n" +
-                          $"- WebSocket aktiviert: {webSocketsEnabled}");
+                Debug.Log($"[NetworkLauncher] About to call StartClient(). Host: {enteredHost}, Port: {enteredPort}");
 
-                bool success = NetworkManager.Singleton.StartClient();
-                Debug.Log($"[NetworkLauncher] StartClient() result: {success}");
+                // StartClient initializes NetworkClient and resets delegates inside RegisterClientMessages()
+                NetworkManager.singleton.StartClient();
 
-                if (!success)
-                {
-                    Debug.LogError("[NetworkLauncher] Failed to initiate StartClient!");
-                    if (statusText != null)
-                    {
-                        statusText.text = "Status: Failed to Start Client";
-                    }
-                    if (connectButton != null)
-                    {
-                        connectButton.interactable = true;
-                    }
-                }
+                // Re-register network callbacks AFTER StartClient, as RegisterClientMessages overwrites static delegates
+                RegisterNetworkEvents();
+
+                Debug.Log($"[NetworkLauncher] StartClient() called and events re-subscribed. NetworkClient.active: {NetworkClient.active}");
             }
             else
             {
-                Debug.LogError("[NetworkLauncher] NetworkManager.Singleton is null!");
+                isConnecting = false;
+                Debug.LogError("[NetworkLauncher] NetworkManager.singleton is null!");
                 if (statusText != null)
                 {
                     statusText.text = "Status: Error (No NetworkManager)";
@@ -360,81 +352,47 @@ namespace MmoPoC.Networking
             }
         }
 
-        private void OnClientConnected(ulong clientId)
+        private void OnClientConnected()
         {
-            // If we are the local client that connected
-            if (NetworkManager.Singleton != null && clientId == NetworkManager.Singleton.LocalClientId)
-            {
-                Debug.Log($"[NetworkLauncher] Local client connected successfully! ClientId: {clientId}");
-                if (statusText != null)
-                {
-                    statusText.text = "Status: Connected";
-                }
-
-                // Disable UI once connected to see the game
-                if (uiCanvas != null)
-                {
-                    uiCanvas.SetActive(false);
-                }
-            }
-            else
-            {
-                Debug.Log($"[NetworkLauncher] Client connected. ClientId: {clientId}");
-            }
-        }
-
-        private void OnClientDisconnected(ulong clientId)
-        {
-            string reason = NetworkManager.Singleton != null ? NetworkManager.Singleton.DisconnectReason : "N/A";
-            bool isClient = NetworkManager.Singleton != null ? NetworkManager.Singleton.IsClient : false;
-            bool isConnectedClient = NetworkManager.Singleton != null ? NetworkManager.Singleton.IsConnectedClient : false;
-
-            Debug.Log($"[NetworkLauncher] Client Disconnected. Details:\n" +
-                      $"- ClientId: {clientId}\n" +
-                      $"- NetworkManager.DisconnectReason: {reason}\n" +
-                      $"- NetworkManager.Singleton.IsClient: {isClient}\n" +
-                      $"- NetworkManager.Singleton.IsConnectedClient: {isConnectedClient}");
-
-            // If the disconnected client is us
-            if (NetworkManager.Singleton != null && clientId == NetworkManager.Singleton.LocalClientId)
-            {
-                Debug.LogWarning("[NetworkLauncher] Local client disconnected.");
-                if (statusText != null)
-                {
-                    statusText.text = "Status: Disconnected";
-                }
-
-                // Re-enable UI so client can try to reconnect
-                if (uiCanvas != null)
-                {
-                    uiCanvas.SetActive(true);
-                }
-
-                if (connectButton != null)
-                {
-                    connectButton.interactable = true;
-                }
-            }
-        }
-
-        private void OnServerTransportEvent(NetworkEvent eventType, ulong clientId, System.ArraySegment<byte> payload, float receiveTime)
-        {
-            try
-            {
-                Debug.Log($"[NetworkLauncher] OnTransportEvent: EventType={eventType}, ClientId={clientId}, PayloadLength={payload.Count}");
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"[NetworkLauncher] Exception in OnTransportEvent logging: {ex}");
-            }
-        }
-
-        private void OnTransportFailure()
-        {
-            Debug.LogError("[NetworkLauncher] OnTransportFailure Callback triggered! Transport failure occurred.");
+            Debug.Log("[NetworkLauncher] Local client connected successfully to Mirror Server!");
             if (statusText != null)
             {
-                statusText.text = "Status: Transport Failure";
+                statusText.text = "Status: Connected";
+            }
+
+            // Disable UI once connected to see the game
+            if (uiCanvas != null)
+            {
+                uiCanvas.SetActive(false);
+            }
+        }
+
+        private void OnClientDisconnected()
+        {
+            Debug.LogWarning("[NetworkLauncher] Client disconnected from Mirror Server.");
+            if (statusText != null)
+            {
+                statusText.text = "Status: Disconnected";
+            }
+
+            // Re-enable UI so client can try to reconnect
+            if (uiCanvas != null)
+            {
+                uiCanvas.SetActive(true);
+            }
+
+            if (connectButton != null)
+            {
+                connectButton.interactable = true;
+            }
+        }
+
+        private void OnClientError(TransportError error, string message)
+        {
+            Debug.LogError($"[NetworkLauncher] Mirror Transport Error: {error} - {message}");
+            if (statusText != null)
+            {
+                statusText.text = $"Status: Transport Error ({error})";
             }
             if (connectButton != null)
             {

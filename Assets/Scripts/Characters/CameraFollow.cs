@@ -1,5 +1,5 @@
 using UnityEngine;
-using Unity.Netcode;
+using Mirror;
 
 namespace MmoPoC.Characters
 {
@@ -46,12 +46,9 @@ namespace MmoPoC.Characters
 
         private void FindPlayer()
         {
-            if (NetworkManager.Singleton != null && 
-                NetworkManager.Singleton.IsClient && 
-                NetworkManager.Singleton.LocalClient != null && 
-                NetworkManager.Singleton.LocalClient.PlayerObject != null)
+            if (NetworkClient.localPlayer != null)
             {
-                target = NetworkManager.Singleton.LocalClient.PlayerObject.transform;
+                target = NetworkClient.localPlayer.transform;
             }
             else
             {
@@ -59,8 +56,8 @@ namespace MmoPoC.Characters
                 GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
                 foreach (var p in players)
                 {
-                    NetworkObject netObj = p.GetComponent<NetworkObject>();
-                    if (netObj == null || netObj.IsOwner)
+                    NetworkIdentity netIdentity = p.GetComponent<NetworkIdentity>();
+                    if (netIdentity == null || netIdentity.isLocalPlayer)
                     {
                         target = p.transform;
                         break;

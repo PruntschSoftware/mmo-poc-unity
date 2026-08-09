@@ -27,9 +27,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mirror.CompilerSymbols", "Mirror.CompilerSymbols.csproj", "{1269ce87-1cd3-d1e4-f930-41a9483bce4c}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{a1c0742d-e9df-932e-888c-cc774746a5b4}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EncryptionTransportEditor", "EncryptionTransportEditor.csproj", "{5dc919d3-294b-3e53-5875-f45500990b50}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{a1c0742d-e9df-932e-888c-cc774746a5b4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -62,10 +62,10 @@ Global
 		{31339dcf-73a2-7c15-6c08-a5bcfd6b786d}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1269ce87-1cd3-d1e4-f930-41a9483bce4c}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1269ce87-1cd3-d1e4-f930-41a9483bce4c}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{a1c0742d-e9df-932e-888c-cc774746a5b4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{a1c0742d-e9df-932e-888c-cc774746a5b4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5dc919d3-294b-3e53-5875-f45500990b50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5dc919d3-294b-3e53-5875-f45500990b50}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{a1c0742d-e9df-932e-888c-cc774746a5b4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{a1c0742d-e9df-932e-888c-cc774746a5b4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

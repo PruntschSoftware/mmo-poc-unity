@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Unity.Netcode;
+using Mirror;
 
 namespace MmoPoC.Characters
 {
@@ -26,35 +26,37 @@ namespace MmoPoC.Characters
             characterController = GetComponent<CharacterController>();
         }
 
-        public override void OnNetworkSpawn()
+        public override void OnStartClient()
         {
-            if (!IsOwner)
+            base.OnStartClient();
+
+            // Disable CharacterController on non-local players so NetworkTransform can sync position/rotation smoothly
+            if (!isLocalPlayer && characterController != null)
             {
-                // Disable CharacterController on non-owners so NetworkTransform can update the transform smoothly
-                if (characterController != null)
-                {
-                    characterController.enabled = false;
-                }
+                characterController.enabled = false;
             }
-            else
+        }
+
+        public override void OnStartLocalPlayer()
+        {
+            base.OnStartLocalPlayer();
+
+            // Assign ourselves as camera target immediately when local player spawns
+            Camera mainCam = Camera.main;
+            if (mainCam != null)
             {
-                // Assign ourselves as camera target immediately on spawn
-                Camera mainCam = Camera.main;
-                if (mainCam != null)
+                CameraFollow follow = mainCam.GetComponent<CameraFollow>();
+                if (follow != null)
                 {
-                    CameraFollow follow = mainCam.GetComponent<CameraFollow>();
-                    if (follow != null)
-                    {
-                        follow.Target = transform;
-                    }
+                    follow.Target = transform;
                 }
             }
         }
 
         private void Update()
         {
-            // Only the owner of this player object can move it
-            if (!IsOwner) return;
+            // Only the local player moves themselves
+            if (!isLocalPlayer) return;
 
             // Read input using New Input System
             Vector2 input = Vector2.zero;

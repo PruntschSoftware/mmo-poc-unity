@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: ServerProfile
   m_EditorClassIdentifier: UnityEditor.dll::UnityEditor.Build.Profile.BuildProfile
   m_AssetVersion: 2
-  m_BuildTarget: 24
+  m_BuildTarget: 19
   m_Subtarget: 2
-  m_PlatformId: 
+  m_PlatformId: 4e3c793746204150860bf175a9a41a05
   m_PlatformBuildProfile:
     rid: 2791870130514559375
   m_ActivePlatformGuid: 
