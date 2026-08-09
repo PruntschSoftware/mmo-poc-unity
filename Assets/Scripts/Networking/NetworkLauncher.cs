@@ -246,9 +246,30 @@ namespace MmoPoC.Networking
             if (NetworkManager.singleton != null)
             {
                 var transport = NetworkManager.singleton.GetComponent<SimpleWebTransport>();
+                ushort serverPort = defaultPort;
+
+                // 1. Check PORT environment variable (Railway / Docker standard)
+                string envPort = System.Environment.GetEnvironmentVariable("PORT");
+                if (!string.IsNullOrEmpty(envPort) && ushort.TryParse(envPort, out ushort parsedEnvPort))
+                {
+                    serverPort = parsedEnvPort;
+                    Debug.Log($"[NetworkLauncher] Using PORT from Environment: {serverPort}");
+                }
+
+                // 2. Check -port command line argument
+                string[] args = System.Environment.GetCommandLineArgs();
+                for (int i = 0; i < args.Length - 1; i++)
+                {
+                    if (args[i].Equals("-port", System.StringComparison.OrdinalIgnoreCase) && ushort.TryParse(args[i + 1], out ushort parsedArgPort))
+                    {
+                        serverPort = parsedArgPort;
+                        Debug.Log($"[NetworkLauncher] Using PORT from Command Line: {serverPort}");
+                    }
+                }
+
                 if (transport != null)
                 {
-                    transport.port = defaultPort;
+                    transport.port = serverPort;
                 }
 
 #if UNITY_SERVER
