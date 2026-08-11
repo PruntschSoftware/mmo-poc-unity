@@ -1,6 +1,7 @@
 using UnityEngine;
 using Mirror;
 using Mirror.SimpleWeb;
+using kcp2k;
 using TMPro;
 using UnityEngine.UI;
 
@@ -30,6 +31,7 @@ namespace MmoPoC.Networking
         private readonly ServerPreset[] presets = new ServerPreset[]
         {
             new ServerPreset { name = "Local Host", address = "127.0.0.1", port = 7777 },
+            new ServerPreset { name = "vServer", address = "185.164.6.110", port = 7777 },
             new ServerPreset { name = "Railway Demo", address = "sakura.proxy.rlwy.net", port = 38260 },
             new ServerPreset { name = "Custom Server", address = "", port = 0 }
         };
@@ -78,6 +80,13 @@ namespace MmoPoC.Networking
                 {
                     uiCanvas.SetActive(false);
                     Debug.Log("[NetworkLauncher] Disabled UI Canvas in Awake() to prevent headless TMPro culling errors.");
+                }
+
+                GameObject launcherCanvas = GameObject.Find("LauncherCanvas");
+                if (launcherCanvas != null)
+                {
+                    launcherCanvas.SetActive(false);
+                    Debug.Log("[NetworkLauncher] Disabled LauncherCanvas in Awake() for Headless Server.");
                 }
 
                 // Also find and disable EventSystem on the server
@@ -245,7 +254,7 @@ namespace MmoPoC.Networking
 
             if (NetworkManager.singleton != null)
             {
-                var transport = NetworkManager.singleton.GetComponent<SimpleWebTransport>();
+                var portTransport = NetworkManager.singleton.GetComponent<PortTransport>();
                 ushort serverPort = defaultPort;
 
                 // 1. Check PORT environment variable (Railway / Docker standard)
@@ -267,9 +276,9 @@ namespace MmoPoC.Networking
                     }
                 }
 
-                if (transport != null)
+                if (portTransport != null)
                 {
-                    transport.port = serverPort;
+                    portTransport.Port = serverPort;
                 }
 
 #if UNITY_SERVER
@@ -277,11 +286,14 @@ namespace MmoPoC.Networking
 #else
                 bool isUnityServerDefined = false;
 #endif
+                var activeTransport = NetworkManager.singleton.transport;
+                string transportName = activeTransport != null ? activeTransport.GetType().Name : "None";
+
                 Debug.Log($"[NetworkLauncher] Pre-StartServer Diagnostics:\n" +
                           $"- Application.platform: {Application.platform}\n" +
                           $"- UNITY_SERVER active: {isUnityServerDefined}\n" +
-                          $"- Transport: SimpleWebTransport\n" +
-                          $"- Port: {(transport != null ? transport.port : defaultPort)}");
+                          $"- Transport: {transportName}\n" +
+                          $"- Port: {(portTransport != null ? portTransport.Port : defaultPort)}");
 
                 try
                 {
@@ -291,7 +303,7 @@ namespace MmoPoC.Networking
 
                     if (active)
                     {
-                        Debug.Log($"[NetworkLauncher] Dedicated Server successfully started on port {(transport != null ? transport.port : defaultPort)}!");
+                        Debug.Log($"[NetworkLauncher] Dedicated Server successfully started on port {(portTransport != null ? portTransport.Port : defaultPort)}!");
                     }
                     else
                     {
@@ -339,10 +351,10 @@ namespace MmoPoC.Networking
             {
                 NetworkManager.singleton.networkAddress = targetAddress;
 
-                var transport = NetworkManager.singleton.GetComponent<SimpleWebTransport>();
-                if (transport != null)
+                var portTransport = NetworkManager.singleton.GetComponent<PortTransport>();
+                if (portTransport != null)
                 {
-                    transport.port = targetPort;
+                    portTransport.Port = targetPort;
                 }
 
                 string enteredHost = targetAddress;
