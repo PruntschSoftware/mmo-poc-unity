@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Mirror;
+using MmoPoC.Combat;
+using MmoPoC.UI;
 
 namespace MmoPoC.Characters
 {
@@ -16,6 +18,8 @@ namespace MmoPoC.Characters
         private CharacterController characterController;
         private Vector3 velocity;
         private Animator cachedAnimator;
+        private Vector3 lastPosition;
+        private PlayerHealth playerHealth;
 
         public float MoveSpeed
         {
@@ -26,11 +30,32 @@ namespace MmoPoC.Characters
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
+            playerHealth = GetComponent<PlayerHealth>();
+        }
+
+        public override void OnStartServer()
+        {
+            base.OnStartServer();
+
+            // Randomize spawn position slightly around initial spawn point
+            Vector2 randomCircle = Random.insideUnitCircle * 3.5f;
+            Vector3 randomOffset = new Vector3(randomCircle.x, 0f, randomCircle.y);
+
+            if (characterController != null && characterController.enabled)
+            {
+                characterController.Move(randomOffset);
+            }
+            else
+            {
+                transform.position += randomOffset;
+            }
         }
 
         public override void OnStartClient()
         {
             base.OnStartClient();
+
+            lastPosition = transform.position;
 
             // Disable CharacterController on non-local players so NetworkTransform can sync position/rotation smoothly
             if (!isLocalPlayer && characterController != null)
@@ -53,6 +78,11 @@ namespace MmoPoC.Characters
                     follow.Target = transform;
                 }
             }
+
+            // Bind HUD for local player
+            PlayerHealth health = GetComponent<PlayerHealth>();
+            PlayerClassManager classMgr = GetComponent<PlayerClassManager>();
+            PlayerHUD.EnsureHUDExists().BindLocalPlayer(health, classMgr);
         }
 
         private Animator GetActiveAnimator()
@@ -77,10 +107,32 @@ namespace MmoPoC.Characters
 
         private void Update()
         {
+            // Do nothing if dead
+            if (playerHealth != null && playerHealth.IsDead) return;
+
             Animator animator = GetActiveAnimator();
 
-            // Only the local player handles input & movement
-            if (!isLocalPlayer) return;
+            // Handle remote player animations based on NetworkTransform position changes
+            if (!isLocalPlayer)
+            {
+                Vector3 positionDelta = transform.position - lastPosition;
+                positionDelta.y = 0f;
+                float remoteSpeed = Time.deltaTime > 0f ? positionDelta.magnitude / Time.deltaTime : 0f;
+                bool isMovingRemote = remoteSpeed > 0.1f;
+
+                if (animator != null)
+                {
+                    animator.SetBool("Moving", isMovingRemote);
+                    animator.SetFloat("Velocity", isMovingRemote ? moveSpeed : 0f);
+                    animator.SetFloat("Animation Speed", 1f);
+
+                    bool isGroundedRemote = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, 0.4f);
+                    animator.SetInteger("Jumping", isGroundedRemote ? 0 : 1);
+                }
+
+                lastPosition = transform.position;
+                return;
+            }
 
             // Read input using New Input System
             Vector2 input = Vector2.zero;
@@ -100,7 +152,7 @@ namespace MmoPoC.Characters
             bool isMoving = moveDirection.magnitude > 0.01f;
 
             // Apply movement
-            if (isMoving)
+            if (isMoving && characterController != null && characterController.enabled)
             {
                 characterController.Move(moveDirection * moveSpeed * Time.deltaTime);
 
@@ -110,7 +162,7 @@ namespace MmoPoC.Characters
             }
 
             // Jump handling
-            bool isGrounded = characterController.isGrounded;
+            bool isGrounded = characterController != null && characterController.isGrounded;
             bool jumpPressed = keyboard != null && keyboard.spaceKey.wasPressedThisFrame;
 
             if (isGrounded)
@@ -128,10 +180,13 @@ namespace MmoPoC.Characters
             }
 
             // Apply gravity
-            velocity.y -= gravity * Time.deltaTime;
-            characterController.Move(velocity * Time.deltaTime);
+            if (characterController != null && characterController.enabled)
+            {
+                velocity.y -= gravity * Time.deltaTime;
+                characterController.Move(velocity * Time.deltaTime);
+            }
 
-            // Sync Animator parameters locally and across clients
+            // Sync Animator parameters locally
             if (animator != null)
             {
                 animator.SetBool("Moving", isMoving);
@@ -148,6 +203,8 @@ namespace MmoPoC.Characters
             {
                 CmdPerformAttack();
             }
+
+            lastPosition = transform.position;
         }
 
         [Command]
@@ -170,7 +227,42 @@ namespace MmoPoC.Characters
         [Command]
         private void CmdPerformAttack()
         {
+            PlayerHealth selfHealth = GetComponent<PlayerHealth>();
+            if (selfHealth != null && selfHealth.IsDead) return;
+
+            // Trigger animation immediately on clients
             RpcPerformAttack();
+
+            // Delay damage check to align with the end/impact of the attack animation swing
+            StartCoroutine(ServerAttackHitRoutine(selfHealth, 0.4f));
+        }
+
+        private System.Collections.IEnumerator ServerAttackHitRoutine(PlayerHealth selfHealth, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+
+            if (selfHealth != null && selfHealth.IsDead) yield break;
+
+            // Server-side hit detection in front of attacking player
+            Vector3 attackOrigin = transform.position + Vector3.up * 1.0f + transform.forward * 1.2f;
+            float attackRadius = 1.4f;
+            Collider[] hitColliders = Physics.OverlapSphere(attackOrigin, attackRadius);
+
+            // Use HashSet so each target PlayerHealth is only hit ONCE per attack sweep
+            System.Collections.Generic.HashSet<PlayerHealth> hitTargets = new System.Collections.Generic.HashSet<PlayerHealth>();
+
+            foreach (var hitCollider in hitColliders)
+            {
+                PlayerHealth targetHealth = hitCollider.GetComponentInParent<PlayerHealth>();
+                if (targetHealth != null && targetHealth != selfHealth && !targetHealth.IsDead)
+                {
+                    if (!hitTargets.Contains(targetHealth))
+                    {
+                        hitTargets.Add(targetHealth);
+                        targetHealth.TakeDamage(20);
+                    }
+                }
+            }
         }
 
         [ClientRpc]
@@ -185,5 +277,7 @@ namespace MmoPoC.Characters
         }
     }
 }
+
+
 
 

@@ -21,6 +21,7 @@ namespace MmoPoC.Characters
         [SerializeField] private GameObject mageModel;
 
         public CharacterClass CurrentClass => currentClass;
+        public event System.Action<CharacterClass> OnClassChangedEvent;
 
         public override void OnStartServer()
         {
@@ -41,6 +42,7 @@ namespace MmoPoC.Characters
         private void OnClassChanged(CharacterClass oldClass, CharacterClass newClass)
         {
             UpdateClassVisuals(newClass);
+            OnClassChangedEvent?.Invoke(newClass);
         }
 
         private void UpdateClassVisuals(CharacterClass characterClass)
@@ -51,3 +53,4 @@ namespace MmoPoC.Characters
         }
     }
 }
+
