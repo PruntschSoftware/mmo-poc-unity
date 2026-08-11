@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kcp2k", "kcp2k.csproj", "{4
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mirror.Transports", "Mirror.Transports.csproj", "{4782d8e4-9d7d-3592-fa51-68bf9961b074}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{a1c0742d-e9df-932e-888c-cc774746a5b4}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Telepathy", "Telepathy.csproj", "{7776663a-cd29-80cf-b062-da229030f5d9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{31339dcf-73a2-7c15-6c08-a5bcfd6b786d}"
@@ -28,8 +30,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mirror.CompilerSymbols", "Mirror.CompilerSymbols.csproj", "{1269ce87-1cd3-d1e4-f930-41a9483bce4c}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EncryptionTransportEditor", "EncryptionTransportEditor.csproj", "{5dc919d3-294b-3e53-5875-f45500990b50}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{a1c0742d-e9df-932e-888c-cc774746a5b4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -56,6 +56,8 @@ Global
 		{427ffa53-5a74-586b-2c1d-05800ae50db9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4782d8e4-9d7d-3592-fa51-68bf9961b074}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4782d8e4-9d7d-3592-fa51-68bf9961b074}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{a1c0742d-e9df-932e-888c-cc774746a5b4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{a1c0742d-e9df-932e-888c-cc774746a5b4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7776663a-cd29-80cf-b062-da229030f5d9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7776663a-cd29-80cf-b062-da229030f5d9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{31339dcf-73a2-7c15-6c08-a5bcfd6b786d}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -64,8 +66,6 @@ Global
 		{1269ce87-1cd3-d1e4-f930-41a9483bce4c}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5dc919d3-294b-3e53-5875-f45500990b50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5dc919d3-294b-3e53-5875-f45500990b50}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{a1c0742d-e9df-932e-888c-cc774746a5b4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{a1c0742d-e9df-932e-888c-cc774746a5b4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
