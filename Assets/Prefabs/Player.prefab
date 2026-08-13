@@ -5646,6 +5646,8 @@ GameObject:
   - component: {fileID: 1288571152757382771}
   - component: {fileID: 7647321805115532527}
   - component: {fileID: 8536246741586064468}
+  - component: {fileID: 2921670947573609606}
+  - component: {fileID: 7732583152627444040}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -5729,7 +5731,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
   sceneId: 0
-  _assetId: 0
+  _assetId: 2262902685
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
@@ -5853,6 +5855,38 @@ MonoBehaviour:
   maxHealth: 100
   hitFlashDuration: 0.2
   hitFlashColor: {r: 1, g: 0.2, b: 0.2, a: 1}
+--- !u!114 &2921670947573609606
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7984066842346317514}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc92d43b6cb946944b90e94b4525e2c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MmoPoC.Combat.PlayerMana
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  maxMana: 100
+  manaRegenRate: 10
+--- !u!114 &7732583152627444040
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7984066842346317514}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c30ba93c2af175d47ada4b05c355dac9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MmoPoC.Combat.PlayerSkills
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!1 &7995944937579015939
 GameObject:
   m_ObjectHideFlags: 0
@@ -6771,6 +6805,7 @@ MonoBehaviour:
   fillImage: {fileID: 2306355737913027770}
   hpText: {fileID: 8832810787315201535}
   fullHealthColor: {r: 0.2, g: 0.85, b: 0.3, a: 1}
+  midHealthColor: {r: 0.95, g: 0.75, b: 0.2, a: 1}
   lowHealthColor: {r: 0.9, g: 0.2, b: 0.2, a: 1}
 --- !u!1 &8970098670745940832
 GameObject:

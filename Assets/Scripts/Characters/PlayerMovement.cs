@@ -15,11 +15,17 @@ namespace MmoPoC.Characters
         [SerializeField] private float gravity = 15f;
         [SerializeField] private float jumpHeight = 2.5f;
 
+        [Header("Combat Settings")]
+        [SerializeField] private float attackCooldown = 0.7f;
+        private float attackCooldownTimer = 0f;
+
         private CharacterController characterController;
         private Vector3 velocity;
         private Animator cachedAnimator;
         private Vector3 lastPosition;
         private PlayerHealth playerHealth;
+        private bool wasGrounded = true;
+        private bool wasGroundedRemote = true;
 
         public float MoveSpeed
         {
@@ -132,6 +138,7 @@ namespace MmoPoC.Characters
                 positionDelta.y = 0f;
                 float remoteSpeed = Time.deltaTime > 0f ? positionDelta.magnitude / Time.deltaTime : 0f;
                 bool isMovingRemote = remoteSpeed > 0.1f;
+                bool isGroundedRemote = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, 0.45f);
 
                 if (animator != null)
                 {
@@ -139,10 +146,19 @@ namespace MmoPoC.Characters
                     animator.SetFloat("Velocity", isMovingRemote ? moveSpeed : 0f);
                     animator.SetFloat("Animation Speed", 1f);
 
-                    bool isGroundedRemote = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, 0.4f);
-                    animator.SetInteger("Jumping", isGroundedRemote ? 0 : 1);
+                    if (!wasGroundedRemote && isGroundedRemote)
+                    {
+                        animator.SetInteger("Jumping", 0);
+                        animator.SetInteger("Trigger Number", 1);
+                        animator.SetTrigger("Trigger");
+                    }
+                    else if (!isGroundedRemote)
+                    {
+                        animator.SetInteger("Jumping", 1);
+                    }
                 }
 
+                wasGroundedRemote = isGroundedRemote;
                 lastPosition = transform.position;
                 return;
             }
@@ -188,6 +204,7 @@ namespace MmoPoC.Characters
                 if (jumpPressed)
                 {
                     velocity.y = Mathf.Sqrt(jumpHeight * 2f * gravity);
+                    wasGrounded = false; // Prevent landing check on the same frame as jump takeoff
                     CmdPerformJump();
                 }
             }
@@ -205,15 +222,35 @@ namespace MmoPoC.Characters
                 animator.SetBool("Moving", isMoving);
                 animator.SetFloat("Velocity", isMoving ? moveSpeed : 0f);
                 animator.SetFloat("Animation Speed", 1f);
-                animator.SetInteger("Jumping", isGrounded ? 0 : 1);
+
+                // Detect landing transition
+                if (!wasGrounded && isGrounded && velocity.y <= 0f)
+                {
+                    animator.SetInteger("Jumping", 0);
+                    animator.SetInteger("Trigger Number", 1);
+                    animator.SetTrigger("Trigger");
+                }
+                else if (!isGrounded)
+                {
+                    animator.SetInteger("Jumping", velocity.y < -1f ? 2 : 1);
+                }
             }
 
-            // Attack handling (Left Mouse Click or F key)
+            wasGrounded = isGrounded;
+
+            // Tick down the basic attack cooldown
+            if (attackCooldownTimer > 0f)
+            {
+                attackCooldownTimer -= Time.deltaTime;
+            }
+
+            // Attack handling (Left Mouse Click or F key) — gated by cooldown
             bool attackPressed = (mouse != null && mouse.leftButton.wasPressedThisFrame) ||
                                  (keyboard != null && keyboard.fKey.wasPressedThisFrame);
 
-            if (attackPressed)
+            if (attackPressed && attackCooldownTimer <= 0f)
             {
+                attackCooldownTimer = attackCooldown;
                 CmdPerformAttack();
             }
 
@@ -232,6 +269,7 @@ namespace MmoPoC.Characters
             Animator animator = GetActiveAnimator();
             if (animator != null)
             {
+                animator.SetInteger("Jumping", 1);
                 animator.SetInteger("Trigger Number", 1); // JumpTrigger = 1
                 animator.SetTrigger("Trigger");
             }
@@ -290,6 +328,7 @@ namespace MmoPoC.Characters
         }
     }
 }
+
 
 
 

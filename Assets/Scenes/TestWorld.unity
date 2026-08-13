@@ -5050,6 +5050,11 @@ MonoBehaviour:
   target: {fileID: 8016485087052132071, guid: 02c79921a039de94691bc0dcec057286, type: 3}
   offset: {x: 0, y: 6, z: -10}
   autoFindPlayer: 1
+  rotationSensitivity: 0.2
+  returnSpeed: 3
+  minPitch: -20
+  maxPitch: 50
+  lookAtHeight: 1
 --- !u!1001 &756411739
 PrefabInstance:
   m_ObjectHideFlags: 0

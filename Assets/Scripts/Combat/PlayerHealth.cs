@@ -124,6 +124,13 @@ namespace MmoPoC.Combat
             currentHealth = maxHealth;
             isDead = false;
 
+            // Assign a fresh random class on respawn (server-authoritative)
+            PlayerClassManager classManager = GetComponent<PlayerClassManager>();
+            if (classManager != null)
+            {
+                classManager.AssignRandomClass();
+            }
+
             // Teleport back to spawn or start position with random offset
             Vector3 spawnPos = Vector3.zero;
             if (NetworkManager.singleton != null)
