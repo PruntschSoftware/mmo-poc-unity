@@ -37,6 +37,19 @@ namespace MmoPoC.Characters
         {
             base.OnStartServer();
 
+            // Ensure player spawns above ground level if spawning below terrain
+            Terrain terrain = Terrain.activeTerrain;
+            if (terrain != null)
+            {
+                float groundY = terrain.SampleHeight(transform.position) + terrain.transform.position.y;
+                if (transform.position.y < groundY + 0.5f)
+                {
+                    Vector3 safePos = transform.position;
+                    safePos.y = groundY + 1.0f;
+                    transform.position = safePos;
+                }
+            }
+
             // Randomize spawn position slightly around initial spawn point
             Vector2 randomCircle = Random.insideUnitCircle * 3.5f;
             Vector3 randomOffset = new Vector3(randomCircle.x, 0f, randomCircle.y);
